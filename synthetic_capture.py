@@ -8,7 +8,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Synthetic Capture",
     "author": "Pablo Rascazzi",
-    "version": (1, 1),
+    "version": (0, 1, 2),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Misc > Synthetic Capture",
     "description": "Example with multiple operators",
@@ -102,7 +102,7 @@ def render_capture_cameras(self, context):
         self.report({'INFO'}, 'Saved captured data "' + context.scene.syncap.save_path + '"')
         
     else:
-        self.report({'WARNING'}, "Warning: cannot destroy cameras because none exists.")
+        self.report({'WARNING'}, "Warning: cannot capture because no cameras exists.")
     
     return None
 
@@ -188,7 +188,16 @@ class SYNCAP_OT_capture_operation(bpy.types.Operator):
     bl_description = "Automatically renders object using cameras spaced at specified intervals"
     
     def execute(self, context):
+        # Create the cameras before the capture if they are set to hidden.
+        if context.scene.syncap.camera_show_hide == False:
+            bpy.ops.syncap.create_cameras()
+            
+        # Capture the object by rendering from each cameras.
         render_capture_cameras(self, context)
+        
+        # Destroy the cameras after the capture if they are set to hidden.
+        if context.scene.syncap.camera_show_hide == False:
+            bpy.ops.syncap.destroy_cameras()
         return{'FINISHED'}
    
 

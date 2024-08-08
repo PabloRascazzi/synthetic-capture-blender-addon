@@ -8,7 +8,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Synthetic Capture",
     "author": "Pablo Rascazzi",
-    "version": (1, 0),
+    "version": (1, 1),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Misc > Synthetic Capture",
     "description": "Example with multiple operators",
@@ -79,8 +79,9 @@ def destroy_capture_cameras(self, context):
 
 
 def update_synthetic_capture_cameras(self, context):
-    destroy_capture_cameras(self, context)
-    create_capture_cameras(self, context)
+    bpy.ops.syncap.destroy_cameras()
+    if context.scene.syncap.camera_show_hide == True:
+        bpy.ops.syncap.create_cameras()
             
     return None
 
@@ -107,6 +108,13 @@ def render_capture_cameras(self, context):
 
 
 class SyntheticCaptureProperties(bpy.types.PropertyGroup):
+    camera_show_hide: bpy.props.BoolProperty(
+        name="Show/Hide",
+        description="Toggle to show or hide the synthetic capture cameras. Useful for visualizing the camera placements",
+        default=True,
+        update=update_synthetic_capture_cameras
+    )
+    
     camera_distance: bpy.props.FloatProperty(
         name="Distance",
         description="Radial distance between the cameras and the object to be captured",
@@ -142,9 +150,9 @@ class SyntheticCaptureProperties(bpy.types.PropertyGroup):
     )
     
     
-class SYNCAP_OT_camera_setup_operation(bpy.types.Operator):
-    bl_idname = "syncap.camera_setup"
-    bl_label = "Setup"
+class SYNCAP_OT_create_cameras_operation(bpy.types.Operator):
+    bl_idname = "syncap.create_cameras"
+    bl_label = "Create Cameras"
     bl_description = "" # TODO
     
     def execute(self, context):
@@ -152,9 +160,9 @@ class SYNCAP_OT_camera_setup_operation(bpy.types.Operator):
         return{'FINISHED'}
     
     
-class SYNCAP_OT_camera_cleanup_operation(bpy.types.Operator):
-    bl_idname = "syncap.camera_cleanup"
-    bl_label = "Cleanup"
+class SYNCAP_OT_destroy_cameras_operation(bpy.types.Operator):
+    bl_idname = "syncap.destroy_cameras"
+    bl_label = "Destroy Cameras"
     bl_description = "" # TODO
     
     def execute(self, context):
@@ -199,14 +207,12 @@ class SYNCAP_PT_panel(bpy.types.Panel):
         camera_box.use_property_split = True
         camera_box.use_property_decorate = False
         camera_box.label(text="Camera Options",icon='OUTLINER_DATA_CAMERA')
+        camera_box.prop(context.scene.syncap, 'camera_show_hide', text='Show / Hide')
         camera_box.prop(context.scene.syncap, 'camera_distance', text='Distance:')
         camera_box_col = camera_box.column(align=True)
         camera_box_col.prop(context.scene.syncap, 'camera_longitude_quantity', text='Longitude:')
         camera_box_col.prop(context.scene.syncap, 'camera_latitude_quantity', text='Latitude:')
-        camera_box_row = camera_box.row(align=True)
-        camera_box_row.operator("syncap.camera_setup", text='Setup')
-        camera_box_row.operator("syncap.camera_cleanup", text='Cleanup')
-        
+
         output_box = self.layout.box()
         output_box.label(text="Output Options",icon='OUTPUT')
         output_box.prop(context.scene.syncap, 'save_path', text='Directory')
@@ -216,8 +222,8 @@ class SYNCAP_PT_panel(bpy.types.Panel):
 
 def register():
     bpy.utils.register_class(SyntheticCaptureProperties)
-    bpy.utils.register_class(SYNCAP_OT_camera_setup_operation)
-    bpy.utils.register_class(SYNCAP_OT_camera_cleanup_operation)
+    bpy.utils.register_class(SYNCAP_OT_create_cameras_operation)
+    bpy.utils.register_class(SYNCAP_OT_destroy_cameras_operation)
     bpy.utils.register_class(SYNCAP_OT_capture_operation)
     bpy.utils.register_class(SYNCAP_OT_save_path_selector)
     bpy.utils.register_class(SYNCAP_PT_panel)
@@ -226,8 +232,8 @@ def register():
 
 def unregister():
     bpy.utils.unregister_module(SyntheticCaptureProperties)
-    bpy.utils.unregister_class(SYNCAP_OT_camera_setup_operation)
-    bpy.utils.unregister_class(SYNCAP_OT_camera_cleanup_operation)
+    bpy.utils.unregister_class(SYNCAP_OT_create_cameras_operation)
+    bpy.utils.unregister_class(SYNCAP_OT_destroy_cameras_operation)
     bpy.utils.unregister_class(SYNCAP_OT_capture_operation)
     bpy.utils.unregister_class(SYNCAP_OT_save_path_selector)
     bpy.utils.unregister_class(SYNCAP_PT_panel)

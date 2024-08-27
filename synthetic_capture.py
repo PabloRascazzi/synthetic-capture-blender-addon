@@ -8,7 +8,7 @@ from bpy_extras.io_utils import ExportHelper
 bl_info = {
     "name": "Synthetic Capture",
     "author": "Pablo Rascazzi",
-    "version": (0, 1, 2),
+    "version": (0, 1, 3),
     "blender": (4, 2, 0),
     "location": "View3D > Sidebar > Misc > Synthetic Capture",
     "description": "Example with multiple operators",
@@ -92,7 +92,8 @@ def render_capture_cameras(self, context):
         print("Synthetic Capture: Capture.")
         
         collection = context.scene.syncap.collection
-        for cam in [obj for obj in collection.objects if obj.type == "CAMERA"]:
+        cameras = [obj for obj in collection.objects if obj.type == "CAMERA"]
+        for cam in cameras[context.scene.syncap.start_index:]:
             context.scene.camera = cam
             file = os.path.join(context.scene.syncap.save_path, cam.name)
             context.scene.render.filepath = file
@@ -134,6 +135,12 @@ class SyntheticCaptureProperties(bpy.types.PropertyGroup):
         description="Amount of camera layers on the latitude",
         default=3, min=1,
         update=update_synthetic_capture_cameras
+    )
+    
+    start_index: bpy.props.IntProperty(
+        name="Start Index",
+        description="Camera index from which the render queue will start from. Useful for restarting render queues of partially captured objects",
+        default=0, min=0
     )
     
     save_path: bpy.props.StringProperty(
@@ -192,6 +199,10 @@ class SYNCAP_OT_capture_operation(bpy.types.Operator):
         if context.scene.syncap.camera_show_hide == False:
             bpy.ops.syncap.create_cameras()
             
+        # Clamp start index value's upper bound.
+        camera_count = context.scene.syncap.camera_longitude_quantity * context.scene.syncap.camera_latitude_quantity
+        context.scene.syncap.start_index = min(context.scene.syncap.start_index, camera_count)
+        
         # Capture the object by rendering from each cameras.
         render_capture_cameras(self, context)
         
@@ -223,7 +234,10 @@ class SYNCAP_PT_panel(bpy.types.Panel):
         camera_box_col.prop(context.scene.syncap, 'camera_latitude_quantity', text='Latitude:')
 
         output_box = self.layout.box()
+        output_box.use_property_split = True
+        output_box.use_property_decorate = False
         output_box.label(text="Output Options",icon='OUTPUT')
+        output_box.prop(context.scene.syncap, 'start_index', text='Start Index')
         output_box.prop(context.scene.syncap, 'save_path', text='Directory')
         
         layout.operator("syncap.capture")
